@@ -1,14 +1,17 @@
 import Wave from "react-wavify";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 import { Download, Github, Star } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
+import Phone from "./phone";
 
 import logo from "@/media/logo.png";
+import Versions from "./versions";
 
 export default function Landing() {
   return (
     <section className="container mx-auto">
-      <div className="grid grid-cols-2 min-h-screen place-items-center">
+      <div className="grid grid-cols-1 md:grid-cols-2 min-h-screen place-items-center">
         <div className="space-y-1">
           <div className="space-y-8">
             <div className="space-y-4">
@@ -25,12 +28,12 @@ export default function Landing() {
               </p>
             </div>
             <div className="flex flex-row space-x-4">
-              <Button>
-                <Github /> Sprawdz na GitHubie
-              </Button>
-              <Button variant="outline">
-                <Download /> Sprawdz wydania
-              </Button>
+              <Link href="https://github.com/majusss/purevideo" target="_blank">
+                <Button>
+                  <Github /> Sprawdz na GitHubie
+                </Button>
+              </Link>
+              <Versions />
             </div>
           </div>
           <p className="text-sm inline-flex items-center gap-1">
@@ -38,17 +41,7 @@ export default function Landing() {
           </p>
         </div>
         <div>
-          <div className="aos-init aos-animate">
-            <div className="float relative h-[600px] max-w-[300px] rounded-[2.5rem] border-[14px] border-onSurface bg-onSurface dark:border-onSurface">
-              <div className="rounded-s-lg absolute -start-[17px] top-[72px] h-[32px] w-[3px] bg-onSurface dark:bg-onSurface"></div>
-              <div className="rounded-s-lg absolute -start-[17px] top-[124px] h-[46px] w-[3px] bg-onSurface dark:bg-onSurface"></div>
-              <div className="rounded-s-lg absolute -start-[17px] top-[178px] h-[46px] w-[3px] bg-onSurface dark:bg-onSurface"></div>
-              <div className="rounded-e-lg absolute -end-[17px] top-[142px] h-[64px] w-[3px] bg-onSurface dark:bg-onSurface"></div>
-              <div className="bg-white h-[572px] w-[272px] overflow-hidden rounded-[2rem] dark:bg-onSurface">
-                <Image src={logo} className="h-[572px] w-[272px]" alt="" />
-              </div>
-            </div>
-          </div>
+          <Phone />
         </div>
       </div>
       <Wave
