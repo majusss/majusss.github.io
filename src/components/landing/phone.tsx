@@ -1,5 +1,5 @@
 import Image from "next/image";
-import logo from "@/media/logo.png";
+import preview from "@/media/preview.png";
 
 export default function Phone() {
   return (
@@ -9,7 +9,7 @@ export default function Phone() {
       <div className="rounded-s-lg absolute -start-[17px] top-[178px] h-[46px] w-[3px] bg-onSurface dark:bg-onSurface"></div>
       <div className="rounded-e-lg absolute -end-[17px] top-[142px] h-[64px] w-[3px] bg-onSurface dark:bg-onSurface"></div>
       <div className="bg-white h-[572px] w-[272px] overflow-hidden rounded-[2rem] dark:bg-onSurface">
-        <Image src={logo} className="h-[572px] w-[272px]" alt="" />
+        <Image src={preview} className="h-[572px] w-[272px]" alt="" />
       </div>
     </div>
   );

@@ -3,6 +3,11 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@utility container {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

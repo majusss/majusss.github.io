@@ -54,7 +54,7 @@ export default function Versions() {
     <Dialog>
       <DialogTrigger asChild>
         <Button variant="outline">
-          <Download /> Sprawdz wydania
+          <Download /> Sprawdź wydania
         </Button>
       </DialogTrigger>
       <DialogContent className="border-none rounded-4xl gap-6">
