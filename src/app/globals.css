@@ -1,3 +1,23 @@
+::-webkit-scrollbar {
+  width: 12px;
+  height: 2px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(224 184 246);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(22 18 23);
+  border-radius: 10px;
+  border: 2px solid rgb(224 184 246);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: hsl(288, 12%, 18%);
+}
+
 @import "tailwindcss";
 @import "tw-animate-css";
 

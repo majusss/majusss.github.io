@@ -62,12 +62,15 @@ export default function Versions() {
           <DialogTitle>Wersje aplikacji</DialogTitle>
         </DialogHeader>
         <DialogDescription>
-          <Tabs defaultValue="releases" className="w-full space-y-4">
+          <Tabs
+            defaultValue="releases"
+            className="w-full space-y-4 max-h-[70vh]"
+          >
             <TabsList>
               <TabsTrigger value="releases">Stabilne</TabsTrigger>
               <TabsTrigger value="devs">Deweloperskie</TabsTrigger>
             </TabsList>
-            <TabsContent value="releases" className="mb-0">
+            <TabsContent value="releases" className="mb-0 overflow-y-auto pr-6">
               {releases.length > 0 ? (
                 releases?.map((release, index) => (
                   <div key={index} className="min-h-16">
@@ -107,7 +110,7 @@ export default function Versions() {
                 </div>
               )}
             </TabsContent>
-            <TabsContent value="devs">
+            <TabsContent value="devs" className="overflow-y-auto pr-6">
               <p className="font-bold text-accent text-center mb-6">
                 Dostęp do wersji deweloperskich jest ograniczony dla
                 zalogowanych użytkowników na GitHubie.
