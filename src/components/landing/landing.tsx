@@ -36,7 +36,7 @@ export default function Landing() {
               <Versions />
             </div>
             <div className="text-sm inline-flex items-center gap-1 text-center justify-center w-full md:justify-start">
-              <p>*Nie zaponij o gwiazdce </p>{" "}
+              <p>*Nie zapomnij o gwiazdce </p>{" "}
               <Star fill="gold" stroke="gold" size={16} />
             </div>
           </div>
