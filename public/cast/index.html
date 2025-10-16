@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="//www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
+    <style>
+      #custom-debug {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: rgba(0, 0, 0, 0.8);
+        color: #00ff00;
+        padding: 15px;
+        font-family: monospace;
+        font-size: 18px;
+        max-width: 500px;
+        max-height: 80vh;
+        overflow-y: auto;
+        z-index: 99999;
+        border: 2px solid #00ff00;
+      }
+      #custom-debug .log-entry {
+        margin: 5px 0;
+        word-wrap: break-word;
+      }
+      #custom-debug .error {
+        color: #ff0000;
+      }
+      #custom-debug .warn {
+        color: #ffff00;
+      }
+      #custom-debug .info {
+        color: #00ffff;
+      }
+    </style>
+  </head>
+  <body>
+    <cast-media-player></cast-media-player>
+
+    <!-- WŁASNY DEBUG OVERLAY -->
+    <div id="custom-debug">
+      <strong>🟢 DEBUG MODE AKTYWNY</strong>
+      <div id="log-container"></div>
+    </div>
+
+    <script>
+      // Globalny handler błędów JavaScript
+      window.onerror = function(message, source, lineno, colno, error) {
+        const errorDetails = `⚠️ ERROR: ${message}\nŹródło: ${source}\nLinia: ${lineno}:${colno}\nSzczegóły: ${error ? error.stack || error.message : 'Brak szczegółów'}`;
+        // Logowanie do konsoli
+        console.error(errorDetails);
+        
+        // Logowanie na ekranie jeśli funkcja logToScreen istnieje
+        if (window.logToScreen) {
+          window.logToScreen(errorDetails, "error");
+        } else {
+          // Funkcja logToScreen jeszcze nie została zdefiniowana, dodaj błąd do kolejki
+          if (!window._errorQueue) window._errorQueue = [];
+          window._errorQueue.push({ message: errorDetails, type: "error" });
+        }
+        
+        // Zwróć true, aby zapobiec wyświetlaniu błędu w konsoli przeglądarki
+        return true;
+      };
+      
+      // Handler dla odrzuconych obietnic (Promise)
+      window.addEventListener('unhandledrejection', function(event) {
+        const errorDetails = `❌ Nieobsłużone odrzucenie obietnicy: ${event.reason}`;
+        console.error(errorDetails, event);
+        
+        if (window.logToScreen) {
+          window.logToScreen(errorDetails, "error");
+        } else {
+          if (!window._errorQueue) window._errorQueue = [];
+          window._errorQueue.push({ message: errorDetails, type: "error" });
+        }
+      });
+
+      // Inicjalizacja kontekstu
+      const context = cast.framework.CastReceiverContext.getInstance();
+      const playerManager = context.getPlayerManager();
+      const logContainer = document.getElementById("log-container");
+
+      // Utwórz konfigurację dla kontekstu odtwarzacza
+      const castOptions = new cast.framework.CastReceiverOptions();
+
+      // Konfiguracja odtwarzacza
+      castOptions.playbackConfig = new cast.framework.PlaybackConfig();
+
+      // Funkcja logowania dostępna globalnie
+      window.logToScreen = function(message, type = "info") {
+        const entry = document.createElement("div");
+        entry.className = `log-entry ${type}`;
+        const timestamp = new Date().toLocaleTimeString();
+        entry.textContent = `[${timestamp}] ${message}`;
+        logContainer.appendChild(entry);
+
+        // Autoscroll do najnowszych logów
+        logContainer.scrollTop = logContainer.scrollHeight;
+
+        // Ogranicz do ostatnich 30 wpisów (zwiększyłem limit dla błędów)
+        if (logContainer.children.length > 30) {
+          logContainer.removeChild(logContainer.firstChild);
+        }
+      };
+      
+      // Sprawdź, czy istnieją błędy w kolejce do wyświetlenia
+      if (window._errorQueue && window._errorQueue.length > 0) {
+        console.log(`Wyświetlanie ${window._errorQueue.length} błędów z kolejki`);
+        window._errorQueue.forEach(err => {
+          window.logToScreen(err.message, err.type);
+        });
+        window._errorQueue = []; // Wyczyść kolejkę
+      }
+
+      context.addEventListener(cast.framework.system.EventType.READY, () => {
+        logToScreen("📡 Context READY", "info");
+      });
+
+      // Interceptor LOAD
+      playerManager.setMessageInterceptor(
+        cast.framework.messages.MessageType.LOAD,
+        (loadRequestData) => {
+          logToScreen("📥 LOAD REQUEST otrzymany!", "info");
+
+          // Zapisz customData do zmiennej globalnej
+          const customData = loadRequestData.media.customData || {};
+          const headers = customData.headers || {};
+
+          // Wyświetl informacje o nagłówkach
+          if (Object.keys(headers).length > 0) {
+            logToScreen(
+              `🔄 Znaleziono niestandardowe nagłówki: ${JSON.stringify(
+                headers
+              )}`,
+              "info"
+            );
+
+            // Ustaw funkcje obsługi żądań, które będą dodawać niestandardowe nagłówki
+            castOptions.playbackConfig.licenseRequestHandler = (
+              requestInfo
+            ) => {
+              applyCustomHeaders(requestInfo, headers);
+              return requestInfo;
+            };
+
+            castOptions.playbackConfig.manifestRequestHandler = (
+              requestInfo
+            ) => {
+              applyCustomHeaders(requestInfo, headers);
+              return requestInfo;
+            };
+
+            castOptions.playbackConfig.segmentRequestHandler = (
+              requestInfo
+            ) => {
+              applyCustomHeaders(requestInfo, headers);
+              return requestInfo;
+            };
+
+            // Aktualizuj konfigurację na bieżąco
+            context.updatePlaybackConfig(castOptions.playbackConfig);
+
+            logToScreen(
+              "✅ Zaktualizowano konfigurację odtwarzania z niestandardowymi nagłówkami",
+              "info"
+            );
+          } else {
+            logToScreen(
+              "ℹ️ Brak niestandardowych nagłówków do zastosowania",
+              "info"
+            );
+          }
+
+          return loadRequestData;
+        }
+      );
+
+      // Funkcja pomocnicza do stosowania nagłówków
+      function applyCustomHeaders(requestInfo, headers) {
+        try {
+          Object.entries(headers).forEach(([key, value]) => {
+            requestInfo.headers[key] = String(value);
+            window.logToScreen(
+              `✅ Dodano nagłówek do żądania: ${key}: ${value}`,
+              "info"
+            );
+          });
+        } catch (error) {
+          window.logToScreen(`❌ Błąd przy ustawianiu nagłówków: ${error}`, "error");
+        }
+      }
+      
+      // Dodaj przycisk do testowania obsługi błędów
+      const debugContainer = document.getElementById("custom-debug");
+      const testErrorButton = document.createElement("button");
+      testErrorButton.textContent = "🧪 Testuj obsługę błędów";
+      testErrorButton.style.background = "#444";
+      testErrorButton.style.color = "#fff";
+      testErrorButton.style.border = "1px solid #00ff00";
+      testErrorButton.style.padding = "5px 10px";
+      testErrorButton.style.margin = "10px 0";
+      testErrorButton.style.cursor = "pointer";
+      testErrorButton.onclick = function() {
+        window.logToScreen("🧪 Testowanie obsługi błędów...", "info");
+        
+        // Test 1: Błąd w synchronicznym kodzie
+        setTimeout(() => {
+          try {
+            const obj = null;
+            obj.nonExistingMethod();
+          } catch (e) {
+            window.logToScreen("✅ Test 1: Złapany błąd synchroniczny", "info");
+          }
+        }, 500);
+        
+        // Test 2: Niezłapany błąd - powinien być przechwycony przez window.onerror
+        setTimeout(() => {
+          const a = nonExistingVariable + 1;
+        }, 1000);
+        
+        // Test 3: Nieobsłużona obietnica - powinna być przechwycona przez unhandledrejection
+        setTimeout(() => {
+          new Promise((resolve, reject) => {
+            reject(new Error("Testowy błąd obietnicy"));
+          });
+        }, 1500);
+      };
+      
+      debugContainer.insertBefore(testErrorButton, logContainer);
+
+      // Konfiguracja handlerów żądań
+      castOptions.playbackConfig.licenseRequestHandler = (requestInfo) => {
+        // Te nagłówki będą aktualizowane po otrzymaniu LOAD MESSAGE
+        return requestInfo;
+      };
+
+      castOptions.playbackConfig.manifestRequestHandler = (requestInfo) => {
+        // Te nagłówki będą aktualizowane po otrzymaniu LOAD MESSAGE
+        return requestInfo;
+      };
+
+      castOptions.playbackConfig.segmentRequestHandler = (requestInfo) => {
+        // Te nagłówki będą aktualizowane po otrzymaniu LOAD MESSAGE
+        return requestInfo;
+      };
+
+      // Nasłuchuj na błędy odtwarzacza
+      playerManager.addEventListener(cast.framework.events.EventType.ERROR, (event) => {
+        const errorCode = event.detailedErrorCode || event.errorCode || 'UNKNOWN_ERROR';
+        const errorMessage = `🔴 Błąd odtwarzacza: ${errorCode} - ${event.error ? event.error.message : 'Brak szczegółów'}`;
+        window.logToScreen(errorMessage, "error");
+        
+        // Dodatkowe informacje o błędzie
+        if (event.error && event.error.stack) {
+          window.logToScreen(`Stack błędu: ${event.error.stack}`, "error");
+        }
+      });
+      
+      // Nasłuchuj na błędy buforowania
+      playerManager.addEventListener(cast.framework.events.EventType.BUFFERING, (event) => {
+        if (event.isBuffering) {
+          window.logToScreen("⏳ Buforowanie rozpoczęte...", "info");
+        } else {
+          window.logToScreen("▶️ Buforowanie zakończone", "info");
+        }
+      });
+      
+      // Nasłuchuj na błędy sieci
+      context.addEventListener(cast.framework.system.EventType.SENDER_DISCONNECTED, (event) => {
+        window.logToScreen(`📵 Nadawca odłączony: ${event.reason || 'Nieznany powód'}`, "warn");
+      });
+      
+      // Uruchom odbiornik z konfiguracją
+      try {
+        context.start(castOptions);
+        window.logToScreen(
+          "🚀 Context.start() wywołany z niestandardową konfiguracją",
+          "info"
+        );
+      } catch (error) {
+        window.logToScreen(`❌ Błąd podczas uruchamiania kontekstu: ${error.message}`, "error");
+      }
+    </script>
+  </body>
+</html>
